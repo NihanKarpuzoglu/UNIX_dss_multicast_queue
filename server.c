@@ -79,6 +79,25 @@ int main(int argc, char *argv[])
 		perror("shmat");
 		exit(1);
 	}
+    for(int j=0; j<CONN; j++)
+    {
+        multicast_queue->connections[j].end_index=0;
+        multicast_queue->connections[j].is_active=false;
+        multicast_queue->connections[j].start_index=0;
+        for(int m=0; m<5; m++)
+        {
+            multicast_queue->connections[j].indices[m]=false;
+            /*if(sem_init(&multicast_queue->connections[j].sem_auto[m], 1, 1) == -1)
+            {
+                perror("Could not create semaphore");
+                exit(1);
+            }*/
+        }
+    }
+    for(int j=0; j<5; j++)
+    {
+        memset(multicast_queue->message_list[j],0,512);
+    }
 
 	/*if(argc == 2)
 	{
@@ -244,11 +263,11 @@ int main(int argc, char *argv[])
                             multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
                         }
                         multicast_queue->connections[conn_no].is_active=false;
-                        for(int k=0; k<5; k++)
+                        /*for(int k=0; k<5; k++)
                         {
                             sem_post(&multicast_queue->connections[i].sem_auto[multicast_queue->last_index]);
                             sem_destroy(&multicast_queue->connections[conn_no].sem_auto[k]);
-                        }
+                        }*/
                         printf("Exiting this agent process\n");
                         exit(1);
                     }
@@ -321,4 +340,5 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
 
