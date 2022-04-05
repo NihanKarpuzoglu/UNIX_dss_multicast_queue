@@ -17,7 +17,11 @@
 #define CONN 4
 #define QUEUE_LEN 5
 #define PORT 8090
+<<<<<<< HEAD:TestCode/server.c
 #define SHM_SIZE (QUEUE_LEN*(512)+CONN*((4*2)+QUEUE_LEN+1+(32*QUEUE_LEN))+(4*4)+(3*32)+(QUEUE_LEN*32))
+=======
+#define SHM_SIZE QUEUE_LEN*(512)+CONN*((4*2)+QUEUE_LEN+1+(32*QUEUE_LEN))+(4*4)+(3*32)+(QUEUE_LEN*32)
+>>>>>>> 2a1af628ac61aaedd0a0c9a6859d9a0bcd11f5b0:server.c
 #define SHM_KEY 0x1234
 
 //---modes-----//
