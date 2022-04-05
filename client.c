@@ -15,8 +15,9 @@
 #include <semaphore.h>
 
 #define CONN 4
+#define QUEUE_LEN 5
 #define PORT 8090
-#define SHM_SIZE 5*(512)+CONN*((4*2)+5+1+(32*5))+(4*4)+(3*32)+(5*32)
+#define SHM_SIZE QUEUE_LEN*(512)+CONN*((4*2)+QUEUE_LEN+1+(32*QUEUE_LEN))+(4*4)+(3*32)+(QUEUE_LEN*32)
 
 //---modes-----//
 #define NOAUTO "NOAUTO"
@@ -36,16 +37,16 @@ typedef struct {
     bool is_active;
     int start_index;
     int end_index;
-    bool indices[5];
-    sem_t sem_auto[5];
+    bool indices[QUEUE_LEN];
+    sem_t sem_auto[QUEUE_LEN];
 }circular_queue;
 
 typedef struct multicast_queue{
-    message message_list[5];
+    message message_list[QUEUE_LEN];
     int last_index;
     circular_queue connections[CONN];
     int last_conn_index;
-    sem_t remained_read[5];
+    sem_t remained_read[QUEUE_LEN];
     int num_conn;
     int queue_start;
     sem_t sem_write;
@@ -158,7 +159,7 @@ int main(int argc, char const *argv[])
 
             sem_wait(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]);
 
-            multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
+            multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%QUEUE_LEN;
 
             printf("Message: %s\n", f_message);
 
@@ -176,7 +177,7 @@ int main(int argc, char const *argv[])
 
                 sem_wait(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]);
 
-                multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
+                multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%QUEUE_LEN;
 
                 printf("Message: %s\n", f_message);
             }
@@ -245,7 +246,7 @@ void* auto_mode(void* input_mqueue)
 
         sem_wait(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]);
 
-        multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
+        multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%QUEUE_LEN;
 
         printf("Message: %s\n", f_message);
     }
