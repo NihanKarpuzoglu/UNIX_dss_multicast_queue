@@ -15,8 +15,9 @@
 #include <semaphore.h>
 
 #define CONN 4
+#define QUEUE_LEN 5
 #define PORT 8090
-#define SHM_SIZE 5*(512)+CONN*((4*2)+5+1+(32*5))+(4*4)+(3*32)+(5*32)
+#define SHM_SIZE (QUEUE_LEN*(512)+CONN*((4*2)+QUEUE_LEN+1+(32*QUEUE_LEN))+(4*4)+(3*32)+(QUEUE_LEN*32))
 #define SHM_KEY 0x1234
 
 //---modes-----//
@@ -37,16 +38,16 @@ typedef struct {
     bool is_active;
     int start_index;
     int end_index;
-    bool indices[5];
-    sem_t sem_auto[5];
+    bool indices[QUEUE_LEN];
+    sem_t sem_auto[QUEUE_LEN];
 }circular_queue;
 
 typedef struct {
-    message message_list[5];
+    message message_list[QUEUE_LEN];
     int last_index;
     circular_queue connections[CONN];
     int last_conn_index;
-    sem_t remained_read[5];
+    sem_t remained_read[QUEUE_LEN];
     int num_conn;
     int queue_start;
     sem_t sem_write;
@@ -79,6 +80,25 @@ int main(int argc, char *argv[])
 		perror("shmat");
 		exit(1);
 	}
+    for(int j=0; j<CONN; j++)
+    {
+        multicast_queue->connections[j].end_index=0;
+        multicast_queue->connections[j].is_active=false;
+        multicast_queue->connections[j].start_index=0;
+        for(int m=0; m<QUEUE_LEN; m++)
+        {
+            multicast_queue->connections[j].indices[m]=false;
+            /*if(sem_init(&multicast_queue->connections[j].sem_auto[m], 1, 1) == -1)
+            {
+                perror("Could not create semaphore");
+                exit(1);
+            }*/
+        }
+    }
+    for(int j=0; j<QUEUE_LEN; j++)
+    {
+        memset(multicast_queue->message_list[j],0,512);
+    }
 
 	/*if(argc == 2)
 	{
@@ -95,7 +115,7 @@ int main(int argc, char *argv[])
         perror("Could not create semaphore");
         exit(1);
     }
-    for(int rem_read=0;rem_read<5;rem_read++)
+    for(int rem_read=0;rem_read<QUEUE_LEN;rem_read++)
     {
         if(sem_init(&multicast_queue->remained_read[rem_read], 1, 0) == -1)
         {
@@ -182,7 +202,7 @@ int main(int argc, char *argv[])
                 multicast_queue->connections[multicast_queue->last_conn_index].start_index=multicast_queue->last_index;
                 multicast_queue->connections[multicast_queue->last_conn_index].end_index=multicast_queue->queue_start;
 
-                for(int k=0; k<5; k++)
+                for(int k=0; k<QUEUE_LEN; k++)
                 {
                     if(sem_init(&multicast_queue->connections[multicast_queue->last_conn_index].sem_auto[k], 1, 1) == -1)
                     {
@@ -211,7 +231,7 @@ int main(int argc, char *argv[])
                     {
                         sem_post(&multicast_queue->connections[conn_no].sem_auto[i]);
                     }
-                    i = (i+1)%5;
+                    i = (i+1)%QUEUE_LEN;
                 }
                 while(i != multicast_queue->queue_start)
                 {
@@ -228,7 +248,7 @@ int main(int argc, char *argv[])
                             sem_post(&multicast_queue->connections[conn_no].sem_auto[i]);
                         }
                     }
-                    i = (i+1)%5;
+                    i = (i+1)%QUEUE_LEN;
                 }
                 message messagebody;
                 while(true)
@@ -241,14 +261,14 @@ int main(int argc, char *argv[])
                         {
                             sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
 
-                            multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
+                            multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%QUEUE_LEN;
                         }
                         multicast_queue->connections[conn_no].is_active=false;
-                        for(int k=0; k<5; k++)
+                        /*for(int k=0; k<QUEUE_LEN; k++)
                         {
                             sem_post(&multicast_queue->connections[i].sem_auto[multicast_queue->last_index]);
                             sem_destroy(&multicast_queue->connections[conn_no].sem_auto[k]);
-                        }
+                        }*/
                         printf("Exiting this agent process\n");
                         exit(1);
                     }
@@ -261,7 +281,7 @@ int main(int argc, char *argv[])
                         {
                             if(strcmp(multicast_queue->message_list[multicast_queue->last_index],""))
                             {
-                                multicast_queue->queue_start = (multicast_queue->queue_start+1)%5;
+                                multicast_queue->queue_start = (multicast_queue->queue_start+1)%QUEUE_LEN;
                             }
 
                             for(int i=0;i<CONN;i++)
@@ -289,7 +309,7 @@ int main(int argc, char *argv[])
                             {
                                 sem_post(&multicast_queue->sem_fetch);
                             }
-                            multicast_queue->last_index = (multicast_queue->last_index+1)%5;
+                            multicast_queue->last_index = (multicast_queue->last_index+1)%QUEUE_LEN;
                         }
                         else{
                             printf("Message queue is full. Cannot write a message\n");
@@ -321,4 +341,5 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
 
