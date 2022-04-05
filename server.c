@@ -269,9 +269,6 @@ int main(int argc, char *argv[])
                     }
                     else
                     {
-                        int dum;
-                        printf("Enter a random number: ");
-                        scanf("%d",&dum);
                         int sem_value;
                         sem_getvalue(&multicast_queue->remained_read[multicast_queue->last_index],&sem_value);
 
