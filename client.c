@@ -63,7 +63,6 @@ int main(int argc, char const *argv[])
     //-------------------connect to server-----------------//
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
-    //char *hello = "Hello from client";
     char shmid_s[512] = {0};
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -88,16 +87,14 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    //sleep(2);
     read( sock , shmid_s, 512); //-----read shared memory information over socket-----//
     int shmkey = atoi(shmid_s);
     int shmid;
 
     printf("%d\n",shmkey);
     shmid = shmget(shmkey, SHM_SIZE, 0666 | IPC_CREAT);
+
     //---------------------attach to shared memory---------------------------//
-
-
     if(shmid == -1)
 	{
 		perror("shmget");
@@ -110,16 +107,10 @@ int main(int argc, char const *argv[])
 		perror("shmat");
 		exit(1);
 	}
-	/*if(multicast_queue->num_conn>CONN)
-	{
-        printf("Reached the maximum limit of connections. Exiting...\n");
-        exit(1);
-	}*/
+
 	printf("%p\n",multicast_queue);
 	printf("%d\n",multicast_queue->num_conn);
 	conn_no=multicast_queue->last_conn_index;
-    //int read_index=multicast_queue->queue_start;
-
 
 	char *mode = NOAUTO;
     printf("%s\n",mode);
@@ -144,51 +135,25 @@ int main(int argc, char const *argv[])
         }
         else if(!strcmp(command,FETCH))
         {
-            //printf("%d\n",multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
-            //int sem_val;
             sem_getvalue(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index], &sem_val);
-            //printf("sem_val: %d\n",sem_val);
-            //while(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0); //----blocking----//
-            //if(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0)
+
             if(sem_val == 0)
             {
                 printf("Waiting the semaphore to be greater than 0\n");
 
-
-                //sem_getvalue(&multicast_queue->sem_block, &sem_val);
-                //printf("sem_block: %d\n",sem_val);
                 sem_post(&multicast_queue->sem_block);
-                //sem_getvalue(&multicast_queue->sem_block, &sem_val);
-                //printf("sem_block: %d\n",sem_val);
 
-                //sem_getvalue(&multicast_queue->sem_fetch, &sem_val);
-                //printf("sem_fetch: %d\n",sem_val);
                 sem_wait(&multicast_queue->sem_fetch);
 
-                //sem_getvalue(&multicast_queue->sem_fetch, &sem_val);
-                //printf("sem_fetch: %d\n",sem_val);
-
-                //sem_getvalue(&multicast_queue->sem_block, &sem_val);
-                //printf("sem_block: %d\n",sem_val);
                 sem_wait(&multicast_queue->sem_block);
-                //printf("Just after sem_block\n");
-                //sem_getvalue(&multicast_queue->sem_block, &sem_val);
-                //printf("sem_block: %d\n",sem_val);
 
                 sem_getvalue(&multicast_queue->sem_block, &sem_val);
                 if(sem_val>0)
                 {
                     sem_post(&multicast_queue->sem_fetch);
                 }
-
-                //sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
-
-
-
-                //sem_getvalue(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index],&sem_val);
-                //printf("sem_val: %d\n",sem_val);
             }
-             if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true)
+            if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true)
             {
                 printf("Inside true statement\n");
                 sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
@@ -198,61 +163,35 @@ int main(int argc, char const *argv[])
                 sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
                 printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
             }
-            //if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]!=true)
-            //{
-                printf("read_index: %d\n", multicast_queue->connections[conn_no].end_index);
-                printf("multicast_queue->connections[conn_no].start_index : %d\n", multicast_queue->connections[conn_no].start_index );
-                printf("multicast_queue->last_index: %d\n", multicast_queue->last_index);
-                printf("multicast_queue->queue_start: %d\n", multicast_queue->queue_start);
-                //if((read_index != multicast_queue->connections[conn_no].start_index || first_read == false) && !( first_read == true && read_index == multicast_queue->last_index && (multicast_queue->last_index == multicast_queue->queue_start)))
+            printf("read_index: %d\n", multicast_queue->connections[conn_no].end_index);
+            printf("multicast_queue->connections[conn_no].start_index : %d\n", multicast_queue->connections[conn_no].start_index );
+            printf("multicast_queue->last_index: %d\n", multicast_queue->last_index);
+            printf("multicast_queue->queue_start: %d\n", multicast_queue->queue_start);
 
-                //if(!( first_read == true && multicast_queue->connections[conn_no].end_index == multicast_queue->last_index && (multicast_queue->last_index == multicast_queue->queue_start)))
-                //{
-                    message f_message;
-                    memcpy(f_message, multicast_queue->message_list[multicast_queue->connections[conn_no].end_index],512);
-                    printf("%s\n", f_message);
-                    //multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]--;
-                    sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
-                    sem_getvalue(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index],&sem_val);
-                    printf("sem_val: %d\n",sem_val);
-                    multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]=true;
+            message f_message;
+            memcpy(f_message, multicast_queue->message_list[multicast_queue->connections[conn_no].end_index],512);
 
-                    sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
-                    printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
-                    sem_wait(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]);
-                    sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
-                    printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
+            sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
+            sem_getvalue(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index],&sem_val);
+            printf("sem_val: %d\n",sem_val);
+            multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]=true;
 
-                    /*if(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0)
-                    {
-                        //multicast_queue->queue_start = (multicast_queue->queue_start+1)%5;
-                        for(int i=0;i<CONN;i++)
-                        {
-                            multicast_queue->connections[i].indices[multicast_queue->connections[conn_no].end_index]=false;
-                        }
-                        /*if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true)
-                        {
-                            multicast_queue->connections[conn_no].start_index = (multicast_queue->connections[conn_no].start_index+1)%5;
-                        }
-                    }*/
-                    multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
-                    //read_index = (read_index + 1)%5;
-                    printf("%s\n", f_message);
-                    if(first_read == false)
-                    {
-                        first_read = true;
-                    }
-            //}
-            //}
-            /*else{
-                printf("This client has read all the messages\n");
-            }*/
+            sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
+            printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
+            sem_wait(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]);
+            sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
+            printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
+
+            multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
+
+            printf("Message: %s\n", f_message);
+
         }
         else if(!strcmp(command,FETCHIF))
         {
             printf("conn_no: %d\n",conn_no);
             printf("read_index: %d\n", multicast_queue->connections[conn_no].end_index);
-            //printf("remained_read: %d\n", multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
+
             sem_getvalue(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index], &sem_val);
             if(sem_val != 0 && multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]!=true)
             {
@@ -262,7 +201,7 @@ int main(int argc, char const *argv[])
 
                 message f_message;
                 memcpy(f_message, multicast_queue->message_list[multicast_queue->connections[conn_no].end_index],512);
-                //multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]=multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]-1;
+
                 sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
                 multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]=true;
 
@@ -272,27 +211,9 @@ int main(int argc, char const *argv[])
                 sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
                 printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
 
-                /*if(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0)
-                {
-                    //multicast_queue->queue_start = (multicast_queue->queue_start+1)%5;
-                    for(int i=0;i<CONN;i++)
-                    {
-                        printf("Cleaning the empty index\n");
-                        multicast_queue->connections[i].indices[multicast_queue->connections[conn_no].end_index]=false;
-                    }
-                    /*if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true)
-                    {
-                        multicast_queue->connections[conn_no].start_index = (multicast_queue->connections[conn_no].start_index+1)%5;
-                    }
-                }*/
-
                 multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
 
-                printf("%s\n", f_message);
-                if(first_read == false)
-                {
-                    first_read = true;
-                }
+                printf("Message: %s\n", f_message);
             }
             else{
                 printf("There is no new message for this client\n");
@@ -321,15 +242,11 @@ int main(int argc, char const *argv[])
 }
 void* auto_mode(void* input_mqueue)
 {
-    //multicast_queue* multicast_queue = (multicast_queue*) input_mqueue);
-
     struct multicast_queue* multicast_queue =  (struct multicast_queue*)input_mqueue;
     int sem_val;
 
     while(true)
     {
-        //printf("%d\n",multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
-        //while(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true);
         if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true)
         {
             printf("Inside true statement\n");
@@ -340,11 +257,8 @@ void* auto_mode(void* input_mqueue)
             sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
             printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
         }
-        //while(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0);
         sem_getvalue(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index], &sem_val);
-            //printf("sem_val: %d\n",sem_val);
-            //while(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0); //----blocking----//
-            //if(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0)
+
         if(sem_val == 0)
         {
             printf("Waiting the semaphore to be greater than 0\n");
@@ -375,56 +289,27 @@ void* auto_mode(void* input_mqueue)
             {
                 sem_post(&multicast_queue->sem_fetch);
             }
+        }
+        printf("read_index: %d\n", multicast_queue->connections[conn_no].end_index);
+        printf("multicast_queue->connections[conn_no].start_index : %d\n", multicast_queue->connections[conn_no].start_index );
+        printf("multicast_queue->last_index: %d\n", multicast_queue->last_index);
+        printf("multicast_queue->queue_start: %d\n", multicast_queue->queue_start);
 
-            //sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
+        message f_message;
+        memcpy(f_message, multicast_queue->message_list[multicast_queue->connections[conn_no].end_index],512);
 
+        sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
+        multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]=true;
 
+        sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
+        printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
+        sem_wait(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]);
+        sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
+        printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
 
-            //sem_getvalue(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index],&sem_val);
-            //printf("sem_val: %d\n",sem_val);
-        }//----blocking----//
-        //if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]!=true)
-        //{
-            printf("read_index: %d\n", multicast_queue->connections[conn_no].end_index);
-            printf("multicast_queue->connections[conn_no].start_index : %d\n", multicast_queue->connections[conn_no].start_index );
-            printf("multicast_queue->last_index: %d\n", multicast_queue->last_index);
-            printf("multicast_queue->queue_start: %d\n", multicast_queue->queue_start);
-                //if((read_index != multicast_queue->connections[conn_no].start_index || first_read == false) && !( first_read == true && read_index == multicast_queue->last_index && (multicast_queue->last_index == multicast_queue->queue_start)))
+        multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
 
-            //if(!( first_read == true && multicast_queue->connections[conn_no].end_index == multicast_queue->last_index && (multicast_queue->last_index == multicast_queue->queue_start)))
-            //{
-                message f_message;
-                memcpy(f_message, multicast_queue->message_list[multicast_queue->connections[conn_no].end_index],512);
-                //multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]--;
-                sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
-                multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]=true;
-
-                sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
-                printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
-                sem_wait(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]);
-                sem_getvalue(&multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index], &sem_val);
-                printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",sem_val);
-                /*if(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0)
-                {
-                    //multicast_queue->queue_start = (multicast_queue->queue_start+1)%5;
-                    for(int i=0;i<CONN;i++)
-                    {
-                        multicast_queue->connections[i].indices[multicast_queue->connections[conn_no].end_index]=false;
-                    }
-                    /*if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true)
-                    {
-                        multicast_queue->connections[conn_no].start_index = (multicast_queue->connections[conn_no].start_index+1)%5;
-                    }
-                }*/
-                multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
-                //read_index = (read_index + 1)%5;
-                printf("%s\n", f_message);
-                if(first_read == false)
-                {
-                    first_read = true;
-                }
-        //}
-        //}
+        printf("Message: %s\n", f_message);
     }
 }
 

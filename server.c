@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
 {
 
     //---- creating and attaching the shared memory---------------------
-    //key_t key;
 	int shmid;
 	multicast_queue *multicast_queue;
 
@@ -67,12 +66,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "usage: shmdemo [data_to_write]\n");
 		exit(1);
 	}
-
-	/*if((key = ftok("main.c", 'R')) == -1)
-	{
-		perror("ftok");
-		exit(1);
-	}*/
 
 	if((shmid = shmget(SHM_KEY, SHM_SIZE, 0666 | IPC_CREAT)) == -1)
 	{
@@ -129,8 +122,6 @@ int main(int argc, char *argv[])
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    //char buffer[512] = {0};
-    //char *hello = "Hello from server";
 
 	// Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -139,17 +130,10 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Forcefully attaching socket to the port 8080
-    /*if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-    {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
-    }*/
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( PORT );
 
-    // Forcefully attaching socket to the port 8080
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0)
     {
         perror("bind failed");
@@ -160,17 +144,12 @@ int main(int argc, char *argv[])
         perror("listen");
         exit(EXIT_FAILURE);
     }
-    /*if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
-    {
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }*/
 
     multicast_queue->last_conn_index=0;
     multicast_queue->last_index=0;
     multicast_queue->num_conn=0;
     multicast_queue->queue_start=0;
-    //memset(multicast_queue->remained_read,0,5*sizeof(multicast_queue->remained_read[0]));
+
     bool is_start=true;
     int read_r=0;
     pid_t fork_val;
@@ -184,20 +163,13 @@ int main(int argc, char *argv[])
             printf("Could not fork");
         }
         if(fork_val) //handle parent process
-        {   printf("Closing the new socket\n");
+        {
+            printf("Closing the new socket\n");
             close(new_socket);
-            //break;
         }
         else{ //handle agent process
             close(server_fd);
-            /*valread = read( new_socket , buffer, 512);
-            printf("%s\n",buffer );
-            send(new_socket , hello , strlen(hello) , 0 );
-            printf("Hello message sent\n");*/
 
-            //char shmid_addr[512];
-            //sprintf(shmid_addr, "%d", shmid);
-            //printf("%s\n", shmid_addr);
             if(multicast_queue->num_conn < CONN)
             {
                 multicast_queue->num_conn++;
@@ -235,7 +207,7 @@ int main(int argc, char *argv[])
                 {
                     int z;
                     printf("This is not the first filling of this slot\n");
-                    //multicast_queue->remained_read[i]++;
+
                     sem_post(&multicast_queue->remained_read[i]);
                     multicast_queue->connections[conn_no].indices[i]=false;
 
@@ -250,15 +222,10 @@ int main(int argc, char *argv[])
                     printf("multicast_queue->connections[conn_no].sem_auto[i]: %d\n",z);
                     i = (i+1)%5;
                 }
-
-                //while(i != multicast_queue->last_index)
                 while(i != multicast_queue->queue_start)
                 {
-                    //if(multicast_queue->connections[conn_no].indices[i] == false)
-                    //{
                     if(strcmp(multicast_queue->message_list[i],""))
                     {
-                        //multicast_queue->remained_read[i]++;
                         sem_post(&multicast_queue->remained_read[i]);
                         multicast_queue->connections[conn_no].indices[i]=false;
 
@@ -273,15 +240,11 @@ int main(int argc, char *argv[])
                         printf("multicast_queue->connections[conn_no].sem_auto[i]: %d\n",z);
                     }
                     i = (i+1)%5;
-                    //}
                 }
-                //char command[7];
                 message messagebody;
-                //while((read( new_socket, messagebody, 512)) || scanf("%s",command))
                 while(true)
                 {
                     read( new_socket , messagebody, 512);
-                    //scanf("%s",command);
                     printf("read_r: %d\n",read_r);
                     printf("message: %s\n",messagebody);
                     if(!strcmp(messagebody,QUIT))
@@ -289,22 +252,8 @@ int main(int argc, char *argv[])
                         multicast_queue->num_conn--;
                         while(multicast_queue->connections[conn_no].end_index != multicast_queue->last_index)
                         {
-                            //multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]--;
                             sem_wait(&multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index]);
 
-                            /*if(multicast_queue->remained_read[multicast_queue->connections[conn_no].end_index] == 0)
-                            {
-                                multicast_queue->queue_start = (multicast_queue->queue_start+1)%5;
-                                for(int i=0;i<CONN;i++)
-                                {
-                                    printf("Cleaning the empty index\n");
-                                    multicast_queue->connections[i].indices[multicast_queue->connections[conn_no].end_index]=false;
-                                }
-                                /*if(multicast_queue->connections[conn_no].indices[multicast_queue->connections[conn_no].end_index]==true)
-                                {
-                                    multicast_queue->connections[conn_no].start_index = (multicast_queue->connections[conn_no].start_index+1)%5;
-                                }
-                            }*/
                             multicast_queue->connections[conn_no].end_index = (multicast_queue->connections[conn_no].end_index+1)%5;
                         }
                         multicast_queue->connections[conn_no].is_active=false;
@@ -317,40 +266,17 @@ int main(int argc, char *argv[])
                         }
                         printf("Exiting this agent process\n");
                         exit(1);
-                        //------eğer başka biri yazma yapıyorsa burda beklemeli-----//
-                        //------eğer yapmıyorsa bu noktada diğerlerinin yazmasını kitlemeli-----//
-                        //printf("Last_index = %d\n",multicast_queue->last_index);
-
                     }
-
                     else
                     {
-                        //sem_wait(&multicast_queue->sem_write);
                         int dum;
                         printf("Enter a random number: ");
                         scanf("%d",&dum);
                         int sem_value;
                         sem_getvalue(&multicast_queue->remained_read[multicast_queue->last_index],&sem_value);
-                        //if(multicast_queue->remained_read[multicast_queue->last_index] == 0) //if queue is not full
-                        if(sem_value == 0)
+
+                        if(sem_value == 0)//if queue is not full
                         {
-                            /*if(multicast_queue->last_index == multicast_queue->queue_start && is_start == false)
-                            {
-                                multicast_queue->queue_start=(multicast_queue->queue_start+1)%5;
-                            }
-                            if(is_start==true)
-                            {
-                                is_start=false;
-                            }*/
-
-                            //printf("Enter the message to send: ");
-                            //scanf("%s", messagebody);
-                            /*multicast_queue->connections[multicast_queue->last_conn_index].is_active=true;
-                            multicast_queue->connections[multicast_queue->last_conn_index].start_index=0;
-                            multicast_queue->connections[multicast_queue->last_conn_index].end_index=0;
-                            multicast_queue->connections[multicast_queue->last_conn_index].indices[multicast_queue->last_index]=true;
-
-                            last_conn_index=(last_conn_index+1)%CONN;*/
                             if(strcmp(multicast_queue->message_list[multicast_queue->last_index],""))
                             {
                                 printf("Queue start will change\n");
@@ -365,7 +291,6 @@ int main(int argc, char *argv[])
                                 int z;
                                 sem_getvalue(&multicast_queue->connections[i].sem_auto[multicast_queue->last_index], &z);
                                 printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",z);
-                                //sem_post(&multicast_queue->connections[i].sem_auto[multicast_queue->last_index]);
 
                                 sem_getvalue(&multicast_queue->connections[i].sem_auto[multicast_queue->last_index], &z);
                                 if(z == 0)
@@ -376,16 +301,7 @@ int main(int argc, char *argv[])
                                 sem_getvalue(&multicast_queue->connections[i].sem_auto[multicast_queue->last_index], &z);
                                 printf("multicast_queue->connections[conn_no].sem_auto[multicast_queue->connections[conn_no].end_index]: %d\n",z);
                             }
-
                             memcpy(multicast_queue->message_list[multicast_queue->last_index],messagebody,512);
-                            //multicast_queue->connections[conn_no].indices[multicast_queue->last_index]=true;
-                            //int sem_val;
-                            //sem_getvalue(&multicast_queue->sem_block,&sem_val);
-                            //printf("sem_val: %d\n",sem_val);
-
-                            //sem_post(&multicast_queue->sem_block);
-                            //sem_getvalue(&multicast_queue->sem_block,&sem_val);
-                            //printf("sem_val: %d\n",sem_val);
 
                             for(int l=0;l<multicast_queue->num_conn;l++)
                             {
@@ -404,13 +320,7 @@ int main(int argc, char *argv[])
                                 sem_getvalue(&multicast_queue->sem_fetch, &sem_val);
                                 printf("sem_fetch: %d\n",sem_val);
                             }
-                            //sem_post(&multicast_queue->sem_fetch);
-                            //multicast_queue->remained_read[multicast_queue->last_index]=multicast_queue->num_conn;
                             multicast_queue->last_index = (multicast_queue->last_index+1)%5;
-
-                            //sem_wait(&multicast_queue->sem_block);
-                            //sem_getvalue(&multicast_queue->sem_block,&sem_val);
-                            //printf("sem_val: %d\n",sem_val);
                         }
                         else{
                             printf("Message queue is full. Cannot write a message\n");
@@ -424,9 +334,7 @@ int main(int argc, char *argv[])
                 printf("There is no space for a new connection\n");
             }
         }
-        printf("Test for()\n");
     }
-    //printf("Test fork()\n");
     int dt;
 	if((dt = shmdt(multicast_queue)) == -1)
 	{
