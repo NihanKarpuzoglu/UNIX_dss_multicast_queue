@@ -132,8 +132,6 @@ int main(int argc, char const *argv[])
 
             if(sem_val == 0)
             {
-                printf("Waiting the semaphore to be greater than 0\n");
-
                 sem_post(&multicast_queue->sem_block);
 
                 sem_wait(&multicast_queue->sem_fetch);
