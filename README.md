@@ -1,5 +1,5 @@
 # UNIX_dss_multicast_queue
-This assignment was given and completed apart from the work done in the work place during my long-term internship in 2021-2022. 
+This assignment was given and completed apart from the work done in the work place during my long-term internship in Turkish Aerospace 2021-2022. 
 
 In this assignment a shared memory based multicasting queue is implemented. A server process creates the shared memory and constructs the queue data structure. Afterwards, it starts accepting UNIX domain stream connections. A client process connecting the socket gets the information about the shared memory of the multicast queue. Also clients send their messages to the server using the socket connection. Each message sent by a client is inserted at the multicast queue and readable by all connected processes (including the original sender). Server forks a new process per connection and this child process serves the commands from the client.
 
